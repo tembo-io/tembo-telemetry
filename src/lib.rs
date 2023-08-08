@@ -12,8 +12,8 @@
 
 use async_trait::async_trait;
 use opentelemetry::{
-    global, sdk::propagation::TraceContextPropagator, sdk::trace, sdk::Resource, trace::TraceId,
-    KeyValue,
+    global, runtime::TokioCurrentThread, sdk::propagation::TraceContextPropagator, sdk::trace,
+    sdk::Resource, trace::TraceId, KeyValue,
 };
 use opentelemetry_otlp::WithExportConfig;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
@@ -93,7 +93,7 @@ impl TelemetryInit for TelemetryConfig {
                     .tracing()
                     .with_exporter(exporter)
                     .with_trace_config(trace_config)
-                    .install_batch(opentelemetry::runtime::Tokio)?;
+                    .install_batch(TokioCurrentThread)?;
                 let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
                 if self.env == "development" {
                     let logger = fmt::layer().compact();

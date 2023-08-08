@@ -1,0 +1,11 @@
+[package]
+name = "trace"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4"
+tracing = "0.1"
+tracing-actix-web = { version="0.7", features = ["opentelemetry_0_19"] }
+opentelemetry = { version = "0.19", features = ["metrics"] }
+tembo-telemetry = { version = "0.1.0", path = "../../" }
