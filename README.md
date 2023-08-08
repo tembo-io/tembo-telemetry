@@ -20,7 +20,7 @@ To get started with `tembo-telemetry`, add it as a dependency in your `Cargo.tom
 
 ```toml
 [dependencies]
-tembo-telemetry = "0.1.0"
+tembo-telemetry = "*"
 ```
 
 Then, in your main application, set up and initialize the telemetry system:
@@ -39,3 +39,39 @@ async fn main() {
     let _ = telemetry_config.init().await;
 }
 ```
+
+## Environment Configuration
+
+The `tembo-telemetry` crate uses the `ENV` environment variable to determine the logging format suitable for different environments. This allows you to have tailored logging experiences for different deployment scenarios (e.g., development vs. production).
+
+### Setting the `ENV` variable
+
+To set the logging environment, you can set the `ENV` variable before running your application:
+
+```bash
+export ENV=production
+```
+
+### Logging Structure
+
+- **Development (`ENV=development`)**: 
+  In the development environment, logs are formatted for readability. They are concise and intended for local debugging purposes.
+
+```bash
+2023-08-08T01:33:27.046003Z  INFO actix_server::builder: starting 14 workers
+2023-08-08T01:33:27.046046Z  INFO trace: Starting HTTP server at https://0.0.0.0:3001/
+2023-08-08T01:33:27.046067Z  INFO actix_server::server: Actix runtime found; starting in Actix runtime
+```
+  
+- **Production (`ENV=production` or any other value)**:
+  In the production environment or any setting other than development, logs are structured in the JSON format. This structure is optimized for machine parsing and is suitable for log aggregation systems, monitoring, and alerting tools.
+
+```bash
+{"v":0,"name":"app","msg":"starting 14 workers","level":30,"hostname":"gwaihir","pid":300368,"time":"2023-08-08T01:34:19.145972575Z","target":"actix_server::builder","line":200,"file":"/home/nhudson/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.2.0/src/builder.rs"}
+{"v":0,"name":"app","msg":"Starting HTTP server at https://0.0.0.0:3001/","level":30,"hostname":"gwaihir","pid":300368,"time":"2023-08-08T01:34:19.146026447Z","target":"app","line":66,"file":"src/main.rs"}
+{"v":0,"name":"app","msg":"Actix runtime found; starting in Actix runtime","level":30,"hostname":"gwaihir","pid":300368,"time":"2023-08-08T01:34:19.146055049Z","target":"actix_server::server","line":196,"file":"/home/nhudson/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.2.0/src/server.rs"}
+```
+
+By default, if the `ENV` variable is not set, the logging will be in the non-development format.
+
+To get the best logging experience tailored for your environment, always ensure to set the `ENV` variable appropriately before running your application.
