@@ -8,7 +8,7 @@ Logging and Telemetry exporters for [Tembo.io](https://tembo.io) applications.
 [![Documentation](https://docs.rs/tembo-telemetry/badge.svg)](https://docs.rs/tembo-telemetry)
 [![LICENSE](https://img.shields.io/crates/l/tembo-telemetry)](./LICENSE)
 <!-- [![GitHub Actions CI](https://github.com/tembo-io/tembo-telemetry/workflows/CI/badge.svg)](https://github.com/tembo-io/tembo-telemetry/actions?query=workflow%3ACI+branch%3Amain) -->
-[![Tembo Slack](https://img.shields.io/badge/slack-@tembocommunity-brightgreen.svg?logo=slack)](https://tembocommunity.slack.com)
+[![Tembo Slack](https://img.shields.io/badge/slack-@tembocommunity-brightgreen.svg?logo=slack)](https://join.slack.com/t/tembocommunity/shared_invite/zt-20dtnhcmo-pLNV7_Aobi50TdTLpfQ~EQ)
 
 ## Overview
 
