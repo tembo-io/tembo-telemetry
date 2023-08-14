@@ -7,4 +7,4 @@ edition = "2021"
 actix-web = "4"
 tracing = "0.1"
 opentelemetry = { version = "0.19", features = ["metrics"] }
-tembo-telemetry = { version = "0.1.0", path = "../../" }
+tembo-telemetry = { version = "0.1.0", path = "/home/nhudson/code/tembo/tembo-telemetry" }
