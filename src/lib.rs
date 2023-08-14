@@ -10,16 +10,23 @@
 //! # Usage
 //! Refer to the `TelemetryConfig` and `TelemetryInit` traits for setting up and initializing telemetry.
 
+use actix_web::{
+    body::MessageBody,
+    dev::{ServiceRequest, ServiceResponse},
+    Error,
+};
 use async_trait::async_trait;
 use opentelemetry::{
     global, runtime::TokioCurrentThread, sdk::propagation::TraceContextPropagator, sdk::trace,
     sdk::Resource, trace::TraceId, KeyValue,
 };
 use opentelemetry_otlp::WithExportConfig;
+use tracing::Span;
+use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 
-use std::borrow::Cow;
+use std::{borrow::Cow, cell::RefCell};
 
 /// Configuration for telemetry setup.
 ///
@@ -137,9 +144,103 @@ impl TelemetryInit for TelemetryConfig {
     }
 }
 
+thread_local! {
+    /// Thread-local storage for excluded routes.
+    ///
+    /// Contains a list of routes (endpoints) that should not be logged.
+    static EXCLUDED_ROUTES: RefCell<Vec<String>> = RefCell::new(Vec::new());
+}
+
+/// Custom root span builder that allows for filtering out specific routes.
+///
+/// This builder will check if a request's path is in the list of excluded routes,
+/// and if so, it won't log that request.
+pub struct CustomFilterRootSpanBuilder;
+
+impl CustomFilterRootSpanBuilder {
+    /// Sets the routes to be excluded from logging.
+    ///
+    /// # Arguments
+    ///
+    /// * `routes` - A list of route paths to exclude.
+    pub fn set_excluded_routes(routes: Vec<String>) {
+        EXCLUDED_ROUTES.with(|excluded| {
+            *excluded.borrow_mut() = routes;
+        });
+    }
+}
+
+impl RootSpanBuilder for CustomFilterRootSpanBuilder {
+    fn on_request_start(request: &ServiceRequest) -> Span {
+        let should_exclude = EXCLUDED_ROUTES
+            .with(|excluded| excluded.borrow().contains(&request.path().to_string()));
+
+        if should_exclude {
+            Span::none()
+        } else {
+            tracing_actix_web::root_span!(level = tracing::Level::INFO, request)
+        }
+    }
+
+    fn on_request_end<B: MessageBody>(span: Span, outcome: &Result<ServiceResponse<B>, Error>) {
+        DefaultRootSpanBuilder::on_request_end(span, outcome);
+    }
+}
+
+/// Builder for creating a custom logging middleware.
+///
+/// This builder provides methods to specify which routes to exclude from logging.
+pub struct CustomLoggerBuilder {
+    excluded_routes: Vec<String>,
+}
+
+impl CustomLoggerBuilder {
+    /// Creates a new instance of `CustomLoggerBuilder` with no excluded routes.
+    pub fn new() -> Self {
+        Self {
+            excluded_routes: Vec::new(),
+        }
+    }
+
+    /// Specifies a route to be excluded from logging.
+    ///
+    /// # Arguments
+    ///
+    /// * `route` - The path of the route to exclude.
+    pub fn exclude(mut self, route: &str) -> Self {
+        self.excluded_routes.push(route.to_string());
+        self
+    }
+
+    /// Builds and returns a custom logging middleware.
+    ///
+    /// This middleware will use `CustomFilterRootSpanBuilder` to filter out the specified routes.
+    pub fn build(self) -> TracingLogger<CustomFilterRootSpanBuilder> {
+        // Set the excluded routes for our custom builder
+        CustomFilterRootSpanBuilder::set_excluded_routes(self.excluded_routes);
+
+        // Return a TracingLogger with our custom builder
+        TracingLogger::<CustomFilterRootSpanBuilder>::new()
+    }
+}
+
+impl Default for CustomLoggerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Convenience function to obtain a `CustomLoggerBuilder`.
+///
+/// This can be used to start the builder chain for constructing the custom logger.
+pub fn get_tracing_logger() -> CustomLoggerBuilder {
+    CustomLoggerBuilder::new()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use actix_web::test::TestRequest;
 
     #[test]
     fn test_telemetry_config_defaults() {
@@ -155,5 +256,26 @@ mod tests {
         let config = TelemetryConfig::default();
         let result = config.init().await;
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_excluded_route() {
+        CustomFilterRootSpanBuilder::set_excluded_routes(vec!["/health/liveness".to_string()]);
+        let req = TestRequest::get().uri("/health/liveness").to_srv_request();
+        let span = CustomFilterRootSpanBuilder::on_request_start(&req);
+        assert!(span.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_non_excluded_route() {
+        fn mock_on_request_start(request: &ServiceRequest) -> bool {
+            let should_exclude = EXCLUDED_ROUTES
+                .with(|excluded| excluded.borrow().contains(&request.path().to_string()));
+            !should_exclude
+        }
+        CustomFilterRootSpanBuilder::set_excluded_routes(vec!["/health/liveness".to_string()]);
+        let req = TestRequest::get().uri("/some/other/route").to_srv_request();
+        let should_log = mock_on_request_start(&req);
+        assert!(should_log);
     }
 }

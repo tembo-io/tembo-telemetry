@@ -1,4 +1,4 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use opentelemetry::global;
 use std::io;
 use tembo_telemetry::{TelemetryConfig, TelemetryInit};
@@ -13,6 +13,11 @@ async fn hello(tc: web::Data<TelemetryConfig>) -> impl Responder {
     Span::current().record("trace_id", &field::display(&trace_id));
     info!("Received request for /hello");
     HttpResponse::Ok().json("Hello World!")
+}
+
+#[get("/health/liveness")]
+pub async fn liveness(_: HttpRequest) -> impl Responder {
+    HttpResponse::Ok().json("I'm alive!")
 }
 
 #[actix_web::main]
@@ -45,8 +50,13 @@ async fn main() -> io::Result<()> {
         move || {
             App::new()
                 .app_data(telemerty_config.clone())
+                .wrap(
+                    tembo_telemetry::get_tracing_logger()
+                        .exclude("/health/liveness")
+                        .build(),
+                )
+                .service(liveness)
                 .service(hello)
-                .wrap(tembo_telemetry::get_tracing_logger().build())
         }
     })
     .bind(server_bind_address.clone())?
