@@ -16,3 +16,5 @@ jobs:
         uses: ./.github/actions/publish-crate
         with:
           cargo-registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          dry-run: false
+          fail-if-version-published: false
