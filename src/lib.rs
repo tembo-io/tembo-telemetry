@@ -16,11 +16,11 @@ use actix_web::{
     Error,
 };
 use async_trait::async_trait;
-use opentelemetry::{
-    global, runtime::TokioCurrentThread, sdk::propagation::TraceContextPropagator, sdk::trace,
-    sdk::Resource, trace::TraceId, KeyValue,
-};
+use opentelemetry::{global, trace::TraceId, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::{
+    propagation::TraceContextPropagator, runtime::TokioCurrentThread, trace, Resource,
+};
 use tracing::Span;
 use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
@@ -140,6 +140,11 @@ impl TelemetryInit for TelemetryConfig {
             let name: Cow<'static, str> = tracer_id.to_string().into();
             global::tracer(name);
         }
+
+        // Setup bridge between tracing crate and the log crate.  If someone
+        // uses this crate, then if they use the log crate, they will get
+        // the logs printed into the tracing session.
+        tracing_log::LogTracer::init()?;
         Ok(())
     }
 }
