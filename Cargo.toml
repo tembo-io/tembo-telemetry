@@ -1,6 +1,6 @@
 [package]
 name = "tembo-telemetry"
-version = "0.3.0"
+version = "0.3.1"
 description = "Logging and Telemetry exporters for Tembo.io applications"
 homepage = "https://github.com/tembo-io/tembo-telemetry"
 repository = "https://github.com/tembo-io/tembo-telemetry"
@@ -25,10 +25,8 @@ tracing = "0.1"
 opentelemetry = { version = "0.21", default-features = false, features = ["trace", "metrics"] }
 opentelemetry-otlp = { version = "0.14", features = ["tonic", "trace", "tls", "tls-roots"] }
 opentelemetry_sdk = { version = "0.21", features = ["metrics", "rt-tokio-current-thread"] }
-tracing-bunyan-formatter = "0.3"
 tracing-log = "0.2"
-tracing-subscriber = { version = "0.3", features = ["registry", "env-filter", "fmt"] }
-# tonic = { version = "0.9", features = ["tls"]}
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter", "fmt", "json"] }
 tracing-opentelemetry = { version = "0.22" }
 tracing-actix-web = { version="0.7", features = ["opentelemetry_0_21"] }
 

@@ -23,8 +23,11 @@ use opentelemetry_sdk::{
 };
 use tracing::Span;
 use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
-use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
-use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
+use tracing_subscriber::{
+    fmt::{self, format::FmtSpan},
+    layer::SubscriberExt,
+    EnvFilter, Registry,
+};
 
 use std::{borrow::Cow, cell::RefCell};
 
@@ -82,7 +85,6 @@ impl TelemetryInit for TelemetryConfig {
     async fn init(&self) -> Result<(), Box<dyn std::error::Error>> {
         let env_filter =
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
-        let formatting_layer = BunyanFormattingLayer::new(self.app_name.clone(), std::io::stdout);
         let sampler = trace::Sampler::AlwaysOn;
         let resource = Resource::new(vec![KeyValue::new("service.name", self.app_name.clone())]);
         let trace_config = trace::config()
@@ -114,8 +116,7 @@ impl TelemetryInit for TelemetryConfig {
                     let subscriber = Registry::default()
                         .with(telemetry)
                         .with(env_filter)
-                        .with(JsonStorageLayer)
-                        .with(formatting_layer);
+                        .with(fmt::layer().json().with_span_events(FmtSpan::NONE));
                     tracing::subscriber::set_global_default(subscriber)
                         .expect("setting default subscriber failed");
                 };
@@ -128,8 +129,7 @@ impl TelemetryInit for TelemetryConfig {
                         .expect("setting default subscriber failed");
                 } else {
                     let subscriber = Registry::default()
-                        .with(JsonStorageLayer)
-                        .with(formatting_layer)
+                        .with(fmt::layer().json().with_span_events(FmtSpan::NONE))
                         .with(env_filter);
                     tracing::subscriber::set_global_default(subscriber)
                         .expect("setting default subscriber failed");
