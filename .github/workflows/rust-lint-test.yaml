@@ -9,7 +9,7 @@ on:
       - main
   pull_request:
     branches:
-     - main
+      - main
 
 env:
   # Disable incremental compilation.
@@ -37,45 +37,44 @@ jobs:
     name: cargo check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: dtolnay/rust-toolchain@stable
-    - name: Check
-      run: cargo check --all --tests --benches
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check
+        run: cargo check --all --tests --benches
 
   style:
     name: cargo fmt
     needs: check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: nightly
-        components: rustfmt
-    - name: rustfmt
-      run: cargo +nightly fmt --all -- --check
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: rustfmt
+        run: cargo fmt --all -- --check
 
   warnings:
     # Check for any warnings. This is informational and thus is allowed to fail.
     runs-on: ubuntu-latest
     needs: check
     steps:
-    - uses: actions/checkout@v3
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy
-    - name: Clippy
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all --examples --tests --benches -- -D warnings
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all --examples --tests --benches -- -D warnings
 
   tests:
     name: Run tests
     runs-on: ubuntu-22.04
     needs: style
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install Rust stable toolchain
         uses: actions-rs/toolchain@v1
         with:

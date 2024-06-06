@@ -153,7 +153,7 @@ thread_local! {
     /// Thread-local storage for excluded routes.
     ///
     /// Contains a list of routes (endpoints) that should not be logged.
-    static EXCLUDED_ROUTES: RefCell<Vec<String>> = RefCell::new(Vec::new());
+    static EXCLUDED_ROUTES: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
 }
 
 /// Custom root span builder that allows for filtering out specific routes.
